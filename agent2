@@ -1,0 +1,14 @@
+Investigate incident <INCIDENT_ID> involving multiple users and alerts from multiple sources. Review every associated alert, the attack timeline, affected entities, investigation results, response actions, and closure notes.
+
+Determine how the suspicious external chat activity relates to the other alerts. Check available collaboration audit events, URL-click evidence, interactive and non-interactive sign-ins, and endpoint telemetry. Establish whether users replied, clicked links, downloaded or executed files, or showed subsequent suspicious authentication or activity. Distinguish observed actions from attempted contact and unverified possibilities.
+
+Correlate primarily by user identity, timestamps, device identifiers, and message identifiers—not IP address alone. Begin two hours before the earliest incident activity and review the available following 24 hours. State the timezone and any telemetry gaps.
+
+Because the incident is marked resolved, verify whether recorded investigation findings and completed response actions support that status. Identify failed actions, pending approvals, unresolved evidence, or contradictions. Do not assume resolution proves safety or that the incident title proves compromise.
+
+Return a concise, evidence-linked report covering:
+1. What happened, with a short timeline.
+2. Which users or devices were affected, using User A/User B and Device A/Device B.
+3. What remains unresolved, including missing telemetry and closure-evidence gaps.
+4. What the analyst should do next, including whether urgent escalation is warranted and why.
+
