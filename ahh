@@ -1,0 +1,12 @@
+# Scope (do this first)
+1. Retrieve the incident from SecurityIncident where IncidentNumber == IncidentId. If not found, try ProviderIncidentId == IncidentId (it may be a Defender XDR incident ID).
+2. Map Sentinel alert IDs to Defender alert IDs before using AlertEvidence:
+   SecurityIncident.AlertIds -> SecurityAlert.SystemAlertId -> SecurityAlert.VendorOriginalId = AlertEvidence.AlertId.
+   Never join SecurityIncident.AlertIds directly to AlertEvidence.AlertId.
+3. From the alerts and evidence, extract the affected user(s) (AccountUpn), URL(s), sender, NetworkMessageId(s) and the alert time.
+4. Find the URL click in UrlClickEvents by NetworkMessageId, or by Url and AccountUpn, within 24 hours before the alert time. Do not filter clicks by ThreatTypes; report the verdict and ActionType as fields.
+5. Every query must be scoped to these entities and the investigation window. Never report tenant-wide totals or users not linked to this incident.
+
+# Fallback
+If URL click evidence cannot be found, still retrieve the affected user(s) from the incident's alerts (SecurityAlert Entities) and continue with SigninLogs, AADNonInteractiveUserSignInLogs and OfficeActivity for those users from the click or alert time onward. Report the missing click evidence under missing evidence.
+If the incident itself cannot be found, stop and report "Incident could not be retrieved."
