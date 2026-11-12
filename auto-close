@@ -1,0 +1,143 @@
+You are a senior Microsoft Security Copilot, Sentinel and Defender XDR automation
+architect. Design and build a 24/7 "AI Triage and Close" workflow for a mid-size
+company (~1,500 users, US/Canada/UK/EU) with Microsoft Sentinel in the unified
+Defender portal, Defender for Endpoint, Entra ID P2, Intune, Jira, and Microsoft
+Security Copilot (provisioned capacity, SCUs). There is no 24/7 SOC team.
+
+GOAL
+Use the Microsoft-built Security Copilot "Security Analyst Agent" to investigate
+every HIGH and MEDIUM severity incident 24/7, then use a Logic App to act on the
+agent's verdict: close false/benign positives automatically when strict safety
+criteria are met, contain true positives (with approval for high-impact actions),
+and escalate anything uncertain to a human. Low/informational incidents are out of
+scope (already auto-closed by the MSSP orchestrator).
+
+IMPORTANT: First confirm what the Security Analyst Agent can do today and how it can
+be triggered (automatic in Defender, Security Copilot Logic App connector, promptbook,
+or API). If the agent cannot be invoked from a Logic App, design the closest supported
+alternative (Security Copilot connector "Submit a prompt" / "Submit a promptbook" with
+a structured triage promptbook) and say clearly which parts are GA vs preview.
+
+COVERAGE
+- 24/7, every day.
+- Business hours (Mon-Fri 07:00-18:00 Central): agent investigates, Logic App
+  proposes the action, analyst confirms in Teams (human in the loop).
+- After hours, weekends and holidays (watchlist "AI_Holidays"): agent investigates
+  and the Logic App acts automatically within the safety rules below.
+- Kill switches in watchlist "AI_Config": AIAutoCloseEnabled, HighEnabled,
+  MediumEnabled, AfterHoursOnly (true/false).
+
+WORKFLOW (Logic App, Consumption, new designer, triggered by a Sentinel automation
+rule "When incident is created" with condition Severity = High OR Medium)
+1. Trigger: Sentinel incident. Add tag "ai-triage" and comment "AI triage started".
+2. Read kill switches and business-hours/holiday status.
+3. Extract entities (accounts, hosts, IPs, URLs, hashes, mailboxes).
+4. Invoke the Security Analyst Agent (or the triage promptbook) with the incident ID
+   and entities. Require a structured JSON response:
+   { verdict: TruePositive | BenignPositive | FalsePositive | Undetermined,
+     confidence: 0-100, summary, evidence[], affected_entities[],
+     recommended_actions[], mitre_techniques[], classification_reason }
+5. Validate the JSON (Parse JSON with schema). If invalid, timeout, HTTP error, or the
+   agent is unavailable -> fall back to the Sentinel-only playbook path, tag
+   "ai-unavailable", notify on-call.
+6. Post the agent summary and evidence as an incident comment.
+7. Decision engine:
+
+   A) AUTO-CLOSE (FalsePositive or BenignPositive) ONLY IF ALL are true:
+      - confidence >= 90 for Medium, >= 95 for High
+      - no entity in "AI_ExcludedAccounts" (break-glass, admins, executives/VIPs,
+        service accounts) or "AI_ExcludedDevices" (DCs, SQL servers, critical servers)
+      - no privileged role on involved accounts (check Entra role membership)
+      - no other open incidents for the same entities in the last 24 hours
+      - no malicious threat intelligence match on IPs/URLs/hashes
+      - incident type is not on the "never auto-close" list (ransomware,
+        credential theft from privileged accounts, data exfiltration, persistence
+        on servers)
+      Then close the incident in Sentinel with the correct classification
+      (FalsePositive - IncorrectAlertLogic / BenignPositive - SuspiciousButExpected),
+      add the agent reasoning as the closing comment, tag "ai-auto-closed",
+      update Jira to Resolved.
+      High severity auto-close: close but also tag "ai-closed-high-review" and add to
+      the next-morning human review queue (mandatory review within 24h).
+
+   B) TRUE POSITIVE:
+      - Low-impact actions run automatically: revoke sessions, AV scan, add indicator,
+        soft-delete phishing email, confirm user compromised.
+      - High-impact actions (disable user, isolate device, restrict app execution)
+        require Teams approval: timeout 15 minutes for High, 60 minutes for Medium.
+      - On timeout: High identity -> safe default (revoke sessions + require password
+        reset); devices -> never isolate on timeout, escalate by Teams call/phone.
+        Medium -> no high-impact action, tag "ai-review", keep open.
+      - Keep incident Active, assign to on-call, Jira priority Highest/High.
+
+   C) UNDETERMINED or confidence below threshold:
+      - Do not close. Tag "ai-needs-human", assign to on-call, Teams notification with
+        the agent summary; Medium after hours -> next business morning queue;
+        High -> immediate notification.
+
+8. Execute actions via existing worker playbooks (child Logic Apps): Block user,
+   Revoke sessions, Confirm risky user, Isolate/Unisolate device, AV scan, Restrict app.
+9. Failure path: "Catch" scope -> comment with the error, tag "ai-failed", reopen if
+   closed, raise severity, notify on-call.
+10. Reopen safety net: a scheduled rule every hour that reopens any "ai-auto-closed"
+    incident if a new alert appears for the same entities within 72 hours, tags
+    "ai-reopened", and notifies on-call.
+11. Audit: every step logged as an incident comment (agent verdict, confidence,
+    decision rule matched, action, approver); tags by severity "ai-high"/"ai-medium";
+    Jira issue created and kept in two-way sync (status, comments).
+12. Daily and Monday reports (scheduled Logic App): per severity - incidents
+    triaged, auto-closed, true positives, contained, undetermined, approvals,
+    timeouts, reopened (false negatives), agent accuracy vs human review, SCU usage
+    and cost. Post to Teams and email.
+
+QUALITY CONTROL
+- Human spot-check: 100% of High auto-closes and 10% random sample of Medium
+  auto-closes reviewed weekly; record agree/disagree in a watchlist or table.
+- Start thresholds conservative; only lower them if agreement >= 95% over 4 weeks.
+- Track false negatives (reopened incidents) as the key safety metric.
+
+COST AND RELIABILITY
+- Only High/Medium trigger the agent; deduplicate incidents with the same entities
+  within 30 minutes; set an SCU budget alert and a daily cap; if the cap is reached,
+  fall back to the Sentinel-only path.
+- Retry policy for Security Copilot calls (2 retries, exponential backoff).
+- Note known issue: custom agent publishing at workspace scope returns HTTP 500;
+  design must work with the built-in Security Analyst Agent or a promptbook.
+
+SECURITY AND PERMISSIONS
+- System-assigned managed identities, least privilege. List exact roles:
+  Microsoft Sentinel Responder, Sentinel Automation Contributor, Security Copilot
+  contributor/workspace access for the connector identity, Defender for Endpoint API
+  (Machine.Isolate, Machine.Scan, Machine.RestrictExecution, Ti.ReadWrite),
+  Microsoft Graph (User.RevokeSessions.All, IdentityRiskyUser.ReadWrite.All,
+  RoleManagement.Read.Directory, User.EnableDisableAccount.All only if used).
+- No secrets in workflows; Jira API token in Key Vault.
+- The agent must never take actions directly; all actions go through the Logic App
+  decision engine and worker playbooks.
+
+DELIVERABLES
+1. Mermaid flowchart showing agent invocation, the three verdict paths
+   (auto-close / true positive / human), fallback path, and reopen safety net.
+2. Logic App workflow definition (JSON) with placeholders (<WORKSPACE_ID>,
+   <TEAMS_CHANNEL_ID>, <JIRA_URL>, <COPILOT_WORKSPACE>).
+3. The triage promptbook / agent instruction text that forces the JSON output schema.
+4. JSON schema for the agent response and the Parse JSON step.
+5. Sentinel automation rule configuration and how it coexists with the MSSP's
+   existing orchestrator rule (order, conditions).
+6. Watchlist CSV templates: AI_Config, AI_Holidays, AI_ExcludedAccounts,
+   AI_ExcludedDevices, AI_NeverAutoClose.
+7. KQL: reopen safety net query, per-severity daily/Monday report, agent accuracy
+   and SCU usage workbook.
+8. Teams adaptive card JSON for approvals (severity-specific timeouts).
+9. Test plan: High FP auto-close, High TP identity, High TP malware, Medium FP
+   auto-close, Medium undetermined, excluded account, privileged account, agent
+   unavailable/HTTP 500, invalid JSON, approval timeout, reopen after closure.
+10. Phased rollout: Phase 1 shadow mode (agent verdict only, no closing) for 4 weeks
+    with human comparison; Phase 2 auto-close Medium after hours; Phase 3 auto-close
+    Medium 24/7; Phase 4 High auto-close with mandatory review; go/no-go criteria.
+11. Rollback (kill switches, disable rule, reopen closed incidents, unisolate,
+    re-enable users).
+12. Comparison table vs a Sentinel-only automation approach: cost, accuracy, coverage,
+    admin effort, risk, licensing, GA vs preview.
+
+Write step by step so an engineer can implement it in the Azure portal.
