@@ -1,12 +1,3 @@
-# Scope (do this first)
-1. Retrieve the incident from SecurityIncident where IncidentNumber == IncidentId. If not found, try ProviderIncidentId == IncidentId (it may be a Defender XDR incident ID).
-2. Map Sentinel alert IDs to Defender alert IDs before using AlertEvidence:
-   SecurityIncident.AlertIds -> SecurityAlert.SystemAlertId -> SecurityAlert.VendorOriginalId = AlertEvidence.AlertId.
-   Never join SecurityIncident.AlertIds directly to AlertEvidence.AlertId.
-3. From the alerts and evidence, extract the affected user(s) (AccountUpn), URL(s), sender, NetworkMessageId(s) and the alert time.
-4. Find the URL click in UrlClickEvents by NetworkMessageId, or by Url and AccountUpn, within 24 hours before the alert time. Do not filter clicks by ThreatTypes; report the verdict and ActionType as fields.
-5. Every query must be scoped to these entities and the investigation window. Never report tenant-wide totals or users not linked to this incident.
+Agent 365 builds on this Purview foundation to provide consistent data security and compliance for agents in the enterprise. Information protection policies extend across users and configured agents. Communication compliance, insider risk management, and records management constructs all incorporate agent activity into their existing workflows. For regulated industries, this means agents can be deployed in scenarios involving financial data, health information, or intellectual property with the same security and compliance posture as the rest of the environment.
 
-# Fallback
-If URL click evidence cannot be found, still retrieve the affected user(s) from the incident's alerts (SecurityAlert Entities) and continue with SigninLogs, AADNonInteractiveUserSignInLogs and OfficeActivity for those users from the click or alert time onward. Report the missing click evidence under missing evidence.
-If the incident itself cannot be found, stop and report "Incident could not be retrieved."
+By anchoring agent data interactions in Purview, Agent 365 ensures that agents inherit the full strength of an organization's existing protection and compliance investments. The result is an environment where agents can operate with the data they need, but never outside the policies that secure and govern it.
