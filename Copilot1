@@ -1,156 +1,22 @@
-Security Weekly Repor
+Data quality in Microsoft Purview Unified Catalog empowers governance domain and data owners to assess and oversee the quality of their data ecosystem, facilitating targeted actions for improvement. In today's AI-driven landscape, the reliability of data directly impacts the accuracy of AI-driven insights and recommendations. Without trustworthy data, there's a risk of eroding trust in AI systems and hindering their adoption.
 
-Bottom line. I helped contain a real compromise with no spread, drove remediation of an actively
-exploited vulnerability across 49 devices, built monitoring for the anti-ransomware pilot, and delivered a
-low-admin, automation-first plan for 24/7 incident handling and data protection, using the Microsoft
-stack we already pay for.
-0
-Additional devices
-compromised after
-containment
-Key outcomes
-99%
-Anti-ransomware coverage,
-all in Prevention
-141
-Vulnerabilities covered by
-one .NET fix
-8
-Remediation requests I
-raised, with owners and
-dates
-I built a Sentinel watchlist for the IT pilot group and a repeatable device health check.
-I investigated the remote-access compromise and found the detection gaps and fixes.
-I raised 8 Defender remediation requests and coordinated the server patch path with infrastructure.
-I created the AI Triage and Close architecture and shared it in the project notebook.
-I led the agent implementation session with the partner and narrowed the agent failure to missing
-identity and permissions.
-I aligned Purview to an IT-first pilot with phased departmental expansion.
-I identified a possible cost saving: the Security Copilot allowance included with E5 appears missing
-from our tenant.
-1. Incident response: remote-access compromise
-A user opened a malicious script from a fake legal email, which installed a hidden remote-access tool Nov
-12. The account was disabled, attacker infrastructure was blocked, and the device is going to reimage; a 14
-day hunt found no other affected devices. A second remote-access attempt on Nov 16 was blocked
-automatically.
-I investigated the device across Defender and the anti-ransomware console. I confirmed the agent was
-active and in Prevention but raised no alert, checked the isolation status (the first request expired while the
-laptop was offline and was resubmitted), and reviewed Intune security settings and ASR rules.
-I recommend: allowing only approved remote-support tools via Intune application control; moving the
-"unusual executable" ASR rule from Audit to Block; confirming web blocking is enforced outside Edge; a
-vendor root-cause case; and targeted user awareness.
-2. Anti-ransomware pilot monitoring and readiness
-I built a Sentinel watchlist for the IT pilot group and a device health check; at the initial check, all 25 pilot
-devices were reporting to Defender. This gives us a defined pilot population and a repeatable way to catch
-Security Weekly Report · Nov 913, 2026 · Page 1 of 4
-reporting gaps. I documented daily health checks and keeping dated results as the operating process.
-I reviewed outstanding rollout questions (prevention date, change records, installation gaps, compatibility,
-application exceptions) and shared investigation evidence with the team. Rollout is now complete at 1,200
-devices 99%, every group enforcing Prevention.
-Next: reconcile pilot membership with the vendor console, verify agent health and effective prevention, and
-review exceptions. Defender reporting alone doesn't prove ransomware prevention.
-3. Personal cloud storage investigation
-I investigated a "double extortion" alert and correlated it with Defender network telemetry from a personal
-cloud storage desktop client. I recommended confirming business authorization, preserving evidence,
-removing the app and evaluating blocking if unauthorized, and no exclusion while under review. It's now
-with management for handling.
-4. Server vulnerability remediation CISA KEV
-I mapped exposure for CVE2026111497 (actively exploited) across 49 devices and raised 8 remediation
-requests, internet-facing web servers first. I coordinated with infrastructure, clarified the affected
-component (.NET runtime) and the supported patch path, and offered component-level evidence. The team
-confirmed the anti-ransomware agent is on those servers.
-Fix
-Microsoft .NET update
-Devices
-Approach
-Due
-65 141 vulns, 4
-critical)
-One update closes all 141
-Nov 12
-Node.js
-9 laptops
-I recommended uninstall (unused 30 days): zero
-patching effort
-Nov 17
-PowerShell 7 · macOS ·
-iOS
-5 · 4 · 4
-Update
-Nov 17
-20
-Visual Studio 3
-versions)
-1 each
-Update or remove
-Nov 20
-Next: confirm affected versions and patch completion, re-check exposure weekly, plan the OS upgrade for 3
-end-of-life Server 2016 hosts.
-5. Purview assessment and implementation planning
-I reviewed the Purview baseline and configuration across audit, DSPM, DLP, sensitivity labels, Copilot
-protection and governance, and I built implementation and audit planning covering classification, labels, DLP,
-Endpoint DLP, retention, evidence and ownership.
-I found the credit card DLP rule first showed user notifications without blocking; a later screen showed
-external-only blocking selected. Saving and enforcement still need confirmation, and admin alerts and
-incident reports were off.
-I aligned the plan to IT-first, with HR, Legal, Finance and Transportation added gradually once IT is stable,
-and a low-admin approach: audit mode first, automated alert triage, short data-driven asks.
-I asked the partner to add the Microsoft 365 Copilot location to DLP, so Copilot doesn't surface highly
-confidential content.
-Next: confirm saved configurations, define pilot acceptance criteria, test with synthetic data.
-Security Weekly Report · Nov 913, 2026 · Page 2 of 4
-6. 24/7 automation: AI triage and close
-Weekend help-desk shifts ended Nov 12. I created the AI Triage and Close architecture to deliver after-hours
-coverage for High and Medium incidents without adding headcount AI investigates and recommends,
-workflow rules validate and record decisions, and humans approve high-impact actions. I recommended the
-promptbook path through the Logic App connector as the baseline, subject to testing.
-I also designed a Sentinel-first Weekend Responder that protects first and reviews the next business day:
-low-impact containment runs automatically, high-impact actions go through a short approval, and a Monday
-summary shows everything that happened.
-Next: validate invocation, authentication, escalation, failure handling and closure safeguards before
-production.
-7. Agent implementation, identity and permissions
-I led a working session with the implementation partner on implementing the new Security Copilot agents. I
-validated our setup 2 compute units, owner roles, plugins), compared agent identities in Entra, and
-narrowed the failure to a missing agent identity and blueprint on the Security Analyst Agent; we
-redeployed it together. I reviewed agent roles in Unified RBAC (the Phishing Triage Agent has its own) and
-proposed the Threat Intelligence Briefing and Security Analyst agents as candidates before custom builds.
-Next: set up the new auto-triggered alert triage agent (needs a Global Admin), verify least-privilege roles,
-and keep troubleshooting custom-agent publishing HTTP 500.
-8. Sentinel and Defender incident correlation
-I reviewed the tenant correlation setting (disabled) and its effect on Sentinel rules and automation. I
-recommend piloting correlation on selected rules before a wider change, keeping exceptions where separate
-incidents are needed; any automated closure must reassess every alert on the incident.
-9. ISO evidence and governance
-I connected pilot monitoring and agent-access reviews to ISO evidence (configuration records, approvals,
-health-check results, ownership) and prepared questions on permission justification, access reviews,
-logging and revocation. The ISO assessment lands the week of Nov 23, remediation runs in December, and
-transition completes Feb 1. I offered to own the monthly Sentinel and automation governance input.
-Decisions needed
-Decision
-Approve application control: approved remote tools only (via
-CAB
-Approve Defender device groups and asset criticality
-Approve moving the "unusual executable" ASR rule to Block
-Why it matters
-Closes the exact path used on Nov 12
-Laptops auto-contained, servers approval
-gated
-Stops unknown executables before they run
-Global Admin time for the alert triage agent setup
-Unlocks 24/7 AI triage with no custom build
-Security Weekly Report · Nov 913, 2026 · Page 3 of 4
-Confirm priority order and pilot scope for Purview and AI
-automation
-Priorities for this week
-Keeps focus on finishing what's in flight
- Verify anti-ransomware prevention, agent health and outstanding exceptions; open the vendor root-cause
-case
- Confirm isolation and reimage; verify web-blocking enforcement
- Confirm the Purview IT pilot scope and validate DLP enforcement and alerting
- Review the AI architecture with the partner and agree pilot acceptance criteria; set up the alert triage
-agent
- Test correlation and automation dependencies; finish the playbook audit
- Follow up on server patching and consolidate operational and audit evidence
+Poor data quality or incompatible data structures can hamper business processes and decision-making capabilities. Data quality in Unified Catalog addresses these challenges by offering users the ability to evaluate data quality using no-code or low-code rules, including out-of-the-box (OOB) rules and AI-generated rules. These rules are applied at the column level and aggregated to provide scores at the levels of data assets, data products, and governance domains, ensuring end-to-end visibility of data quality within each domain.
 
+Data quality in Microsoft Purview also incorporates AI-powered data profiling capabilities, recommending columns for profiling while allowing human intervention to refine these recommendations. This iterative process not only enhances the accuracy of data profiling but also contributes to the continuous improvement of the underlying AI models.
 
+By applying data quality, organizations can effectively measure, monitor, and enhance the quality of their data assets, bolstering the reliability of AI-driven insights and fostering confidence in AI-based decision-making processes.
+
+Data quality life cycle
+Assign users(s) data quality steward permissions in Unified Catalog to use all data quality features.
+Register and scan a data source in Microsoft Purview Data Map.
+Add your data asset to a data product
+Set up a data source connection to prepare your source for data quality assessment.
+Configure and run data profiling for an asset in your data source.
+When profiling is complete, browse the results for each column in the data asset to understand your data's current structure and state.
+Set up data quality rules based on the profiling results, and apply them to your data asset.
+Configure and run a data quality scan on a data product to assess the quality of all supported assets in the data product.
+Review your scan results to evaluate your data product's current data quality.
+Repeat steps 5-8 periodically over your data asset's life cycle to ensure it's maintaining quality.
+Continually monitor your data quality
+Review data quality actions to identify and resolve problems.
+Set data quality notifications to alert you to quality issues.
