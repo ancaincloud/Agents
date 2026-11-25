@@ -1,0 +1,21 @@
+Create a professional Playbook Validation Plan for automation playbooks implemented by our MXDR vendor in Microsoft Sentinel and Defender XDR. The goal is to independently verify that each playbook is correctly triggered, well designed, runs successfully and has the intended real effect, before we accept it into production. Use a clean executive format with tables. No company, people or tenant names.
+
+Sections:
+
+Purpose and scope: independent acceptance validation of vendor-delivered playbooks and automation rules (incident, alert and entity triggered), read-only in production, with tests only on test users and devices.
+Roles (RACI): vendor (build, fix, evidence), internal security engineer (validate, test, report), security manager (approve), change advisory board (enforcement changes).
+Validation method, step by step:
+Inventory: playbook, Content Hub source and template version, trigger type, designer type.
+Trigger mapping: automation rules, order, conditions, duplicates; high-impact playbooks manual or approval-gated.
+Identity and connections: managed identity, least-privilege roles, API connections healthy, Sentinel playbook permissions.
+Design review: every step; True/False and Default branches handled (no silent skips); no full-list loops causing timeouts; approval timeouts and escalation; error handling; exclusion lists for critical servers and break-glass accounts; incident comment for audit.
+Run history: success and failure counts, durations, error details, after-hours runs.
+Real effect: confirm in the Entra ID audit log, Defender Action center, Defender Indicators and the incident comments.
+Controlled test: test incident per path (True, False, Default, timeout), expected versus actual.
+Monitoring: failure alerts (Logic Apps diagnostics or Azure Monitor), SentinelHealth.
+Acceptance criteria per playbook: trigger verified, all paths tested, ≥ 95% successful runs over 2 weeks, real effect confirmed, failure alert in place, documentation delivered.
+Test case table: columns for Playbook, Trigger, Test scenario, Expected result, Actual result, Evidence, Pass/Fail, Owner.
+Findings and severity: High (control fails or acts unsafely), Medium (gap or silent skip), Low (documentation or style); remediation owner and due date.
+Vendor deliverables: design documentation, runbook, permissions list, test evidence, rollback steps, migration plan from the legacy Logic Apps designer (support ends December 2026).
+Timeline: week 1 inventory and design review, week 2 run history and testing, week 3 fixes and re-test, week 4 sign-off. Changes through CAB.
+Ongoing: quarterly re-validation, and re-validation after any change, template update or designer migration; results reported on the operations dashboard.
